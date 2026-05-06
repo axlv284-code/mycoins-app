@@ -18,7 +18,7 @@ app.add_middleware(
 )
 
 # --- KONFIGURASI SECURITY ---
-USER_DB = {"admin": "rahasia123"}
+USER_DB = {"admin": "admin123"}
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 # --- KONFIGURASI GOOGLE SHEETS ---
