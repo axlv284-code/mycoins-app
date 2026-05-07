@@ -9,9 +9,11 @@ from googleapiclient.discovery import build
 
 app = FastAPI()
 
+# UPDATE: CORS setting supaya Vercel bisa akses Backend Hugging Face
 app.add_middleware(
     CORSMiddleware, 
-    allow_origins=["*"], 
+    allow_origins=["*"], # Mengizinkan semua domain (termasuk Vercel lo)
+    allow_credentials=True,
     allow_methods=["*"], 
     allow_headers=["*"]
 )
@@ -24,6 +26,11 @@ SPREADSHEET_ID = '1QYAO7Xur9Si93FUhFW1D_Cf2x0oPZsdd1850TW52_RQ'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
 
 db_tagihan = []
+
+# Tambahin endpoint root "/" biar nggak muncul "Not Found" pas pertama buka
+@app.get("/")
+async def root():
+    return {"status": "Backend MyCoins is Running!"}
 
 def append_to_google_sheet(row_data):
     try:
@@ -83,19 +90,18 @@ async def upload_pdf(file: UploadFile = File(...), token: str = Depends(oauth2_s
             "masa": masa,
             "tanggal": tanggal,
             "pph": pph,
-            "pemotong": pemotong
+            "pemotong": pemotong,
+            "status": "Belum Materai" # Biar frontend nggak error nampilin status
         }
         
         db_tagihan.append(new_entry)
         append_to_google_sheet([nobukpot, npwp, masa, tanggal, pph, pemotong])
         return new_entry
     except Exception as e:
-        return {"error": str(e)}
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/tagihan")
 async def get_tagihan():
     return db_tagihan
 
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+# HAPUS uvicorn.run karena Hugging Face sudah punya runner sendiri di Docker

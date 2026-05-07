@@ -125,7 +125,8 @@
     </div>
 
     <script>
-      const API_URL = "http://127.0.0.1:8000";
+      // GANTI URL KE HUGGING FACE
+      const API_URL = "https://axlv284-mycoins-backend.hf.space";
 
       // --- AUTH LOGIC ---
       function checkAuth() {
@@ -153,10 +154,12 @@
             localStorage.setItem("access_token", data.access_token);
             location.reload();
           } else {
-            alert("Login Gagal: " + data.detail);
+            alert("Login Gagal: " + (data.detail || "Username/Password salah"));
           }
         } catch (e) {
-          alert("Server belum jalan!");
+          alert(
+            "Server Backend tidak merespon. Pastikan Hugging Face statusnya RUNNING.",
+          );
         }
       }
 
@@ -167,21 +170,34 @@
 
       // --- DATA LOGIC ---
       async function loadData() {
-        const res = await fetch(`${API_URL}/api/tagihan`);
-        const data = await res.json();
-        const tbody = document.getElementById("tabelBody");
-        tbody.innerHTML = data
-          .map(
-            (item) => `
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="p-5 font-bold text-slate-700">${item.nobukpot}</td>
-                    <td class="p-5 text-center"><span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-bold">${item.masa}</span></td>
-                    <td class="p-5 font-bold text-right text-red-600">Rp ${item.pph}</td>
-                    <td class="p-5 text-[10px] font-bold text-slate-700 uppercase">${item.pemotong}</td>
-                </tr>
-            `,
-          )
-          .join("");
+        try {
+          const res = await fetch(`${API_URL}/api/tagihan`);
+          if (!res.ok) throw new Error("Gagal ambil data");
+
+          const data = await res.json();
+          const tbody = document.getElementById("tabelBody");
+
+          if (!data || data.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="4" class="p-5 text-center text-slate-400">Belum ada data.</td></tr>';
+            return;
+          }
+
+          tbody.innerHTML = data
+            .map(
+              (item) => `
+                  <tr class="hover:bg-slate-50 transition-colors border-b">
+                      <td class="p-5 font-bold text-slate-700">${item.nobukpot || "-"}</td>
+                      <td class="p-5 text-center"><span class="bg-blue-50 text-blue-600 px-3 py-1 rounded-full text-[10px] font-bold">${item.masa || "-"}</span></td>
+                      <td class="p-5 font-bold text-right text-red-600">Rp ${item.pph || "0"}</td>
+                      <td class="p-5 text-[10px] font-bold text-slate-700 uppercase">${item.pemotong || "-"}</td>
+                  </tr>
+              `,
+            )
+            .join("");
+        } catch (e) {
+          console.error(e);
+        }
       }
 
       async function uploadFile() {
@@ -202,14 +218,17 @@
             headers: { Authorization: `Bearer ${token}` },
             body: formData,
           });
+
           if (res.ok) {
-            loadData();
             alert("Berhasil!");
+            fileInput.value = ""; // Reset input file
+            loadData();
           } else {
-            alert("Gagal upload. Coba login ulang.");
+            const errData = await res.json();
+            alert("Gagal: " + (errData.detail || "Coba login ulang."));
           }
         } catch (e) {
-          alert("Error koneksi!");
+          alert("Error koneksi ke Hugging Face!");
         } finally {
           btn.disabled = false;
           btn.innerHTML = "ANALISIS PDF";
