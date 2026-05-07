@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 
 app = FastAPI()
 
-# Konfigurasi CORS agar frontend bisa akses backend
 app.add_middleware(
     CORSMiddleware, 
     allow_origins=["*"], 
@@ -17,11 +16,9 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-# --- KONFIGURASI SECURITY ---
 USER_DB = {"admin": "admin123"}
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-# --- KONFIGURASI GOOGLE SHEETS ---
 SERVICE_ACCOUNT_FILE = 'credentials.json'
 SPREADSHEET_ID = '1QYAO7Xur9Si93FUhFW1D_Cf2x0oPZsdd1850TW52_RQ'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -41,7 +38,6 @@ def append_to_google_sheet(row_data):
         print(f"Error Sheets: {e}")
         return False
 
-# --- ENDPOINT LOGIN ---
 @app.post("/token")
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user_password = USER_DB.get(form_data.username)
@@ -49,7 +45,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         raise HTTPException(status_code=400, detail="Username atau password salah")
     return {"access_token": form_data.username, "token_type": "bearer"}
 
-# --- ENDPOINT UPLOAD (DIPROTEKSI) ---
 @app.post("/api/upload")
 async def upload_pdf(file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
     content = await file.read()
